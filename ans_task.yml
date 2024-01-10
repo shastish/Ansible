@@ -1,0 +1,120 @@
+---
+- name: Update packages and install Apache2
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Update package list
+      apt:
+        update_cache: yes
+
+    - name: Install Apache2
+      apt:
+        name: apache2
+        state: present
+
+- name: Create directory and index.html
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Create directory /var/www/abc
+      file:
+        path: /var/www/abc
+        state: directory
+        mode: '0755'
+
+    - name: Create index.html file
+      copy:
+        content: "<html><head><title>Ubuntu rocks!</title></head><body><p> I'm running this website on an Ubuntu Server server! @{{ ansible_hostname }}</p></body></html>"
+        dest: /var/www/abc/index.html
+        mode: '0644'
+
+- name: Create dynamic HTML file
+  hosts: localhost
+  gather_facts: true
+
+  tasks:
+    - name: Create HTML content with host name
+      template:
+        src: /var/www/abc/index.html
+        dest: "/tmp/index.html"
+
+- name: Copy HTML file to Node1
+  hosts: localhost
+  gather_facts: true
+
+  tasks:
+    - name: Create HTML content with host name for Node1
+      template:
+        src: /var/www/abc/index.html
+        dest: "/tmp/index.html"
+
+- name: Copy gci.conf file and configure Apache
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Copy gci.conf file
+      copy:
+        src: /etc/apache2/sites-available/000-default.conf
+        dest: /etc/apache2/sites-available/gci.conf
+        mode: '0644'
+
+    - name: Replace lines in gci.conf file
+      lineinfile:
+        path: /etc/apache2/sites-available/gci.conf
+        regexp: '^(\s*)ServerAdmin webmaster@localhost'
+        line: '\1ServerAdmin psureshece@gmail.com'
+        backrefs: yes
+
+    - name: Replace DocumentRoot line
+      lineinfile:
+        path: /etc/apache2/sites-available/gci.conf
+        regexp: '^(\s*)DocumentRoot /var/www/html'
+        line: '\1DocumentRoot /var/www/abc'
+        backrefs: yes
+
+    - name: Replace ServerName with a custom domain name
+      lineinfile:
+        path: /etc/apache2/sites-available/gci.conf
+        regexp: '^(\s*)#\s*ServerName www\.example\.com'
+        line: '\1ServerName abc.example.com'
+        backrefs: yes
+
+    - name: Add entry to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: '192.168.1.9   abc.example.com'
+
+- name: Enable VirtualHost and Reload Apache
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Enable VirtualHost
+      command: a2ensite gci.conf
+      args:
+        creates: /etc/apache2/sites-enabled/gci.conf
+      notify: Reload Apache
+
+- name: Reload Apache
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Reload Apache
+      service:
+        name: apache2
+        state: reloaded
+
+# Uncomment the following section if you want to restart Apache instead of reloading it
+# - name: Restart Apache
+#   hosts: node1
+#   become: yes
+#
+#   tasks:
+#     - name: Restart Apache
+#       service:
+#         name: apache2
+#         state: restarted
