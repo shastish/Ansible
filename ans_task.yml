@@ -107,14 +107,3 @@
       service:
         name: apache2
         state: reloaded
-
-# Uncomment the following section if you want to restart Apache instead of reloading it
-# - name: Restart Apache
-#   hosts: node1
-#   become: yes
-#
-#   tasks:
-#     - name: Restart Apache
-#       service:
-#         name: apache2
-#         state: restarted
