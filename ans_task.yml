@@ -1,6 +1,6 @@
 ---
 - name: Update packages and install Apache2
-  hosts: localhost
+  hosts: all
   become: yes
 
   tasks:
