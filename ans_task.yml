@@ -4,15 +4,11 @@
   become: yes
 
   tasks:
-    - name: Update package list
-      apt:
-        update_cache: yes
-
     - name: Install Apache2
       apt:
         name: apache2
         state: present
-
+        update_cache: yes
 - name: Create directory and index.html
   hosts: localhost
   become: yes
