@@ -1,0 +1,78 @@
+---
+- name: Update packages and install Apache2
+  hosts: my_hosts
+  become: yes
+
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: Install Apache2
+      apt:
+        name: apache2
+        state: present
+        update_cache: yes
+
+    - name: Create directory /var/www/{{ apache_directory_name }}
+      file:
+        path: "/var/www/{{ apache_directory_name }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create index.html file
+      copy:
+        content: |
+          <html>
+          <head>
+          <title> Ubuntu rocks! </title>
+          </head>
+          <body>
+          <p> I'm running this website on an Ubuntu Server server!@{{ ansible_hostname }}
+          </body>
+          </html>
+        dest: "/var/www/{{ apache_directory_name }}/index.html"
+        mode: '0644'
+
+    - name: Copy gci.conf file
+      copy:
+        src: "/etc/apache2/sites-available/000-default.conf"
+        dest: "/etc/apache2/sites-available/{{ apache_directory_name }}.conf"
+        mode: '0644'
+
+    - name: Replace lines in {{ apache_directory_name }}.conf file
+      lineinfile:
+        path: "/etc/apache2/sites-available/{{ apache_directory_name }}.conf"
+        regexp: '^(\s*)ServerAdmin webmaster@localhost'
+        line: '\1ServerAdmin {{ custom_server_admin }}'
+        backrefs: yes
+
+    - name: Replace DocumentRoot line
+      lineinfile:
+        path: "/etc/apache2/sites-available/{{ apache_directory_name }}.conf"
+        regexp: '^(\s*)DocumentRoot /var/www/html'
+        line: '\1DocumentRoot {{ custom_document_root }}'
+        backrefs: yes
+
+    - name: Replace ServerName with a custom domain name
+      lineinfile:
+        path: "/etc/apache2/sites-available/{{ apache_directory_name }}.conf"
+        regexp: '^(\s*)#\s*ServerName www\.example\.com'
+        line: '\1ServerName {{ custom_server_name }}'
+        backrefs: yes
+
+    - name: Add entry to /etc/hosts
+      lineinfile:
+        path: "/etc/hosts"
+        line: '{{ custom_ip_address }}   {{ custom_server_name }}'
+
+    - name: Enable VirtualHost
+      command: a2ensite {{ apache_directory_name }}.conf
+      args:
+        creates: "/etc/apache2/sites-enabled/{{ apache_directory_name }}.conf"
+      notify: Reload Apache
+
+  handlers:
+    - name: Reload Apache
+      service:
+        name: apache2
+        state: reloaded
