@@ -1,0 +1,9 @@
+
+# vars.yml
+
+# Custom values for Apache configuration
+apache_directory_name: my_website
+custom_server_admin: psureshece@gmail.com
+custom_document_root: /var/www/abc
+custom_server_name: abc.example.com
+custom_ip_address: 192.168.1.10
